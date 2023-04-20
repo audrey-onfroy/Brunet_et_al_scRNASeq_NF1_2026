@@ -1,0 +1,319 @@
+---
+title: "NF1 patients"
+subtitle: "Make metadata"
+author: "Audrey"
+date: "`r format(Sys.time(), '%Y-%m-%d')`"
+output:
+  html_document:
+    code_folding: show
+    code_download: true
+    toc: true
+    toc_float: true
+    number_sections: false
+---
+
+<style>
+body {
+text-align: justify}
+</style>
+
+<!-- Automatically computes and prints in the output the running time for any code chunk -->
+```{r, echo=FALSE}
+# https://github.com/rstudio/rmarkdown/issues/1453
+hooks = knitr::knit_hooks$get()
+hook_foldable = function(type) {
+  force(type)
+  function(x, options) {
+    res = hooks[[type]](x, options)
+    
+    if (isFALSE(options[[paste0("fold_", type)]])) return(res)
+    
+    paste0(
+      "<details><summary>", "show", "</summary>\n\n",
+      res,
+      "\n\n</details>"
+    )
+  }
+}
+knitr::knit_hooks$set(
+  output = hook_foldable("output"),
+  plot = hook_foldable("plot"),
+  time_it = local({
+    now = NULL
+    function(before, options) {
+      if (options$time_it) {
+        if (before) {
+          now <<- Sys.time()
+        } else {
+          res = difftime(Sys.time(), now, units = "secs")
+          paste("(Time to run :", round(res, digits = 2), "s)")
+        }
+      }
+    }
+  })
+)
+```
+
+<!-- Set default parameters for all chunks -->
+```{r, setup, include = FALSE}
+set.seed(1337L)
+knitr::opts_chunk$set(echo = TRUE, # display code
+                      # display chunk output
+                      message = FALSE,
+                      warning = FALSE,
+                      fold_output = FALSE, # usefull for sessionInfo()
+                      fold_plot = FALSE,
+                      
+                      # figure settings
+                      fig.align = 'center',
+                      fig.width = 20,
+                      fig.height = 15,
+                      
+                      # something about seed, chunk and Rmarkdown compilation
+                      # https://stackoverflow.com/questions/39417003/long-vectors-not-supported-yet-error-in-rmd-but-not-in-r-script
+                      # cache = TRUE,
+                      cache.lazy = FALSE, 
+                      
+                      # add runtime after chunk
+                      time_it = FALSE)
+```
+
+
+This file is used to generate :
+
+* **sample_info** : dataframe containing sample names, sample path, custom colors...
+* **color_markers** : named list to give custom colors to cell types
+* **cell_markers** : named list containing markers for each cell type
+
+```{r library}
+library(dplyr)
+library(patchwork)
+library(ggplot2)
+
+.libPaths()
+```
+
+
+# Preparation
+
+In this section, we set the global settings of the analysis. We will store data there :
+
+```{r out_dir}
+save_name = "patients"
+out_dir = "."
+```
+
+# Sample info
+
+We create a dataframe containing everything except colors.
+
+```{r sample_info}
+sample_info = data.frame(
+  project_name = c("2019_L", "2020_11", "2020_12", "2020_21",
+                   "GSM5404032", "GSM5404033", "GSM5404034",                    # Wu
+                   "GSM5404035", "GSM5404036", "GSM5404037", "GSM5404038",      # Wu
+                   "GSM5404039", "GSM5404040", "GSM5404041", "GSM5404042",      # Wu
+                   "GSM5404043", "GSM5404044",                                  # Wu
+                   "GSM5050721",                                                # Sun
+                   "GSE183308_1", "GSE183308_2"), # Zhang
+  genotype = "patient",
+  tumor_type = c(rep("dyNF", 3), "MPNST",
+                 rep("pNF", 9), rep("MPNST", 4),
+                 "dyNF", rep("MPNST", 2)),
+  gender = c("F", rep("M", 3),
+             "F", "M", "F",
+             "F", "M", "M", "F",
+             "F", "M", "M", "M",
+             "F", "M",
+             "M", "F", "F"),
+  color = NA,
+  origin = c(rep("here", 4),
+             rep("Wu", 13),
+             rep("Sun", 1),
+             rep("Zhang", 2)),
+  stringsAsFactors = FALSE) %>%
+  dplyr::mutate(sample_type = paste0(genotype, "_", tumor_type)) %>%
+  dplyr::mutate(project_name = factor(project_name, levels = project_name)) %>%
+  dplyr::mutate(tumor_type = factor(tumor_type, levels = c("pNF", "dyNF", "MPNST"))) %>%
+  dplyr::arrange(genotype, tumor_type, gender) %>%
+  dplyr::mutate(unique_id = data.table::rowid(sample_type)) %>%
+  dplyr::mutate(sample_identifier = paste0(sample_type, "_", unique_id)) %>%
+  dplyr::mutate(sample_identifier = factor(sample_identifier, levels = sample_identifier)) %>%
+  dplyr::select(project_name,  genotype, tumor_type, gender,
+                origin, sample_identifier, sample_type, color)
+
+sample_info
+```
+
+We add custom colors for each sample :
+
+```{r custom_palette}
+list_palette = list(
+  # patients
+  patient_pNF = colorRampPalette(c("dodgerblue", "midnightblue")),
+  patient_dyNF = colorRampPalette(c("darkseagreen1", "darkseagreen4")),
+  patient_MPNST = colorRampPalette(c("mediumorchid1", "mediumorchid4")))
+
+for (sample_type in unique(sample_info$sample_type)) {
+  matching_dataset = (sample_info$sample_type == sample_type)
+  sample_info[matching_dataset, "color"] = list_palette[[sample_type]](sum(matching_dataset))
+}
+```
+
+
+We visualize the colors :
+
+```{r custom_palette_see, fig.width = 8, fig.height = 8}
+graphics::pie(rep(1, nrow(sample_info)),
+              col = sample_info$color,
+              labels = sample_info$project_name)
+```
+
+We save it :
+
+```{r save_sample_info}
+saveRDS(sample_info, file = paste0(out_dir, "/", save_name, "_sample_info.rds"))
+```
+
+
+# Cell types
+
+We define markers for each population of interest :
+
+```{r cell_markers, class.source = "fold-hide"}
+cell_markers = list(
+  "tumor cells" = c("ANK3", "PLP1", "NAV2", "COL18A1", "POSTN", "SOX4", "SERPINE2", "GPM6B",
+                    "CALD1", "PDGFA", "TIMP3", "DST", "FBLN2", "LGI4", "SERPINH1",
+                    "NR2F2", "ITGB8", "COL5A2", "PTPRZ1", "LAMA4", "GJC3", "TENM3", "COL1A2",
+                    "ZNF536", "COL16A1", "DLGAP1", "STARD13", "COL27A1", "SOX10",
+                    "TANC2", "ERBB3", "PDZD2", "COL1A1", "COL3A1", "SPARC", "PDLIM4", "EMP1",
+                    "DOCK7", "KLF9", "HS2ST1", "NEDD4", "GAS7", "UTRN", "SPECC1", "FRMD4A",
+                    "TPM1", "DUSP6", "GAS1", "CXCL12", "PDGFRB", "COL6A1", "HTRA1", "LOXL1",
+                    "MAST4", "SLIT2", "COL4A2", "PCOLCE", "CPE", "DKK2", "CAV1", "PRSS23",
+                    "TEAD1", "GJA1", "WWTR1", "AEBP1", "NREP", "NID1", "ITGBL1",
+                    "ZFHX4", "FBN1", "PCDH19", "DDR2", "SDC2", "MXRA7", "CNN3",
+                    "LTBP1", "FOXG1", "LTBP4", "LHFP", "RBFOX2", "TPM2", "RYK", "GPX8",
+                    "PXDN", "RCN1", "FKBP9", "KCNA1", "CHL1", "AATK", "KCNA2", "CADM4",
+                    "ART3", "CDH19", "CD59", "MAL", "CADM1", "ATP1A2", "PTN", "GATM",
+                    "CNP", "CRYAB", "VWA1", "EMP2", "PRNP", "POU3F1", "MBP", "SCN7A",
+                    "CKB", "SCD", "MATN2", "HSPG2", "FABP5", "ABCA8", "DLK1"),
+  
+  "macrophages" = c("C1QC", "MAFB", "FCGR3A", "FCGR3B", "TREM2", "CX3CR1", "TMEM176A",
+                    "CYBB", "FCGR1A", "ADGRE1", "TF", "ITGB5",
+                    "TLR2", "CEBPA", "C3AR1", "PLA2G7", "ZNF705A", "SIRPA", "CD68", "ITGAM",
+                    "LAIR1", "PYHIN1", "CYP4F3", "NCF2", "C1QA", "PID1", "SLC15A3" , "DAB2",
+                    "CLEC12A", "HCK", "LRP1", "LILRB3", "CCR1",
+                    "LILRB4", "RASSF4", "P2RX4", "GNGT2", "SYK", "IRF5", "LYZ"),
+  
+  "cDC" = c("FCER1A", "CLEC10A", "CD1C", "FCGR2B", "IL1R2", "LGALS2", "CD1E", "CD1D", "AMICA1",
+            "PKIB", "RGS18", "ITGAX", "DAPP1", "GAPT", "IGSF6", "CIITA", "HLA-DOA", "PLD4",
+            "STX11", "HCK", "ZNF385A", "DOK2"),
+  
+  "T cells" = c("CD3E", "CD8A", "CD4", "CD3G", "NKG7",
+                "CXCR6", "MS4A4A", "PTPRCAP", "GIMAP4", "SH2D2A", "CD28", "CD2",
+                "LCK", "LAT", "BCL11B", "THY1", "GIMAP6", "ITK", "GIMAP1", "SKAP1", "IL2RB",
+                "RHOH", "SEPT1"),
+  
+  "NK cells" = c("KLRB1", "NCR1", "STYK1", "XCL1", "KLRC2", "CA2",
+                 "SAMD3", "SATB1", "KLRK1", "KLRD1", "TXK",
+                 "CD244", "CD244", "STAT4", "FASLG", "GIMAP5",
+                 "GNLY", "NKG7", "PRF1", "GZMB", "XCL2", "HOPX", "GZMA", "CD247"),
+  
+  "mast cells" = c("MRGPRX2", "TPSB2", "TPSAB1", "FCER1A", "CPA3",
+                   "SLC6A4", "CMA1", "KIT", "RAB27B",
+                   "GATA2", "IL1RL1", "HDC", "SERPINB1",
+                   "LAT2", "VWA5A", "CCL7", "TMEM64",
+                   "BASP1", "CCL2", "GCH1", "FNIP1", "LILRB4"),
+  
+  "B cells" = c("CD79A", "LY6D", "MS4A1", "BANK1", "FCMR", "CCR7", "CD79B", "HLA-DOB", "BCL11A",
+                "GIMAP6", "HLA-DOA", "PTPRCAP", "CD37", "HLA-DMB", "LTB", "EBF1", "SCD", "NAPSA",
+                "CYTIP", "REL", "POU2F2", "MZB1", "FCRL5", "DERL3", "IGJ", "IGLL5", "PIM2",
+                "FAM46C", "TXNDC11"),
+  
+  "endothelial cells" = c("EGFL7", "CDH5", "EMCN", "CD34", "ESAM", "PLVAP", "APLNR", "RAMP2", "TSHZ2",
+                          "SOX18", "ECSCR", "CAV1", "ADGRF5", "PTPRB", "RASIP1", "TIE1", "KDR", "CYYR1",
+                          "MMRN2", "FAM110D", "FLT1", "ARHGAP29", "LRG1", "SPARCL1", "VWF", "KANK3",
+                          "AQP1", "COL4A2", "COL4A1", "NFIB", "ENG", "MAST4", "S100A16", "CRIP2", "PECAM1",
+                          "ABCG2", "CD200", "APBB2", "HSPG2", "GNG11", "IGFBP7", "PRKCDBP", "CAVIN3", "MCAM",
+                          "TM4SF1", "PDLIM1", "INSR", "SMAD1", "CD93", "PLEKHG1", "SERPINH1", "SPARC", "IGFBP4",
+                          "PPIC", "PLXND1", "COL18A1", "SOX4", "TIMP3", "SNRK", "DST", "EMP1"),
+  
+  "fibroblasts" = c("MFAP5", "LUM", "FBLN1", "SERPING1", "CILP", "ASPN", "CDH11", "MFAP4",
+                    "CCDC80", "SVEP1", "LOX", "IL33", "LOXL1", "CPXM1", "MFAP2", "FBN2",
+                    "ISLR", "C1S", "CPXM2", "CLEC11A", "FNDC1", "CD248", "PDPN", "SLIT3",
+                    "FIBIN", "COLEC12", "TWIST1", "PDGFRL", "GXYLT2", "PDGFRA", "IGSF10", "CTHRC1",
+                    "BICC1", "SNHG18", "FKBP11", "CTSK", "DCN", "ADAMTS2", "FZD2", "MMP23A",
+                    "MDK", "SMOC2", "SCARF2", "EBF1", "KDELR3", "FBN1", "IGF1", "C1R",
+                    "GPX3", "MRC2", "P3H3", "MGP", "PCOLCE", "CDC42EP5", "ZFHX4", "COL12A1",
+                    "COL14A1", "PRRX1", "RBP1", "RHOJ", "LHFP", "GPX8", "COL8A1", "MXRA8",
+                    "COL6A2", "EFEMP2", "COL6A3", "SCN7A", "APOD", "FZD1", "LPAR1", "DPYSL3",
+                    "PLPP3", "FKBP7", "AEBP1", "SLIT2", "PALLD", "BMP1", "IGFBP6", "FSTL1",
+                    "GAS6", "FKBP10", "MAGED2", "CRTAP", "RBMS3", "COL5A1", "PLOD2", "OAF",
+                    "MMP2", "GRB10", "COPZ2", "SERPINF1", "PLAT", "TIMP1", "FKBP9", "COL5A3",
+                    "S100A16", "RAB34", "SERF1A", "SERF1B", "THBS2", "NPDC1", "MATN2", "FAM114A1", "FSCN1",
+                    "MEG3", "MGST1", "ECM1", "COL16A1", "DDAH2"),
+  
+  "mural cells" = c("DES", "MYH11", "ANO1", "NDUFA4L2", "RGS5", "NOTCH3", "GUCY1A3", "GUCY1A1", "PDE3A",
+                    "MYLK", "TPM2", "NRARP", "APOLD1", "MAP3K20", "C11orf96", "TINAGL1", "MYL9",
+                    "ARHGEF17", "USP2", "RASD1", "MYO1B", "ASPN", "MUSTN1", "S1PR3", "PTP4A3", "SLC25A25",
+                    "PDGFRB", "PPP1R12B", "RASL11A", "RBPMS", "MFGE8", "ADAMTS9", "MGST3", "RASGRP2", "RRAD",
+                    "GNG11", "CRISPLD2", "TPM1", "EPAS1", "MPRIP", "HSPB1", "ZFHX3", "BICD2", "SYNE2",
+                    "CWC25", "CRTC3", "NOLC1", "LPP", "DLC1", "MAPRE2", "CYGB", "MAFK", "NUDT4",
+                    "TNS1", "IRS2", "THY1", "CPE", "RBM4B", "FBXO33", "ARHGEF12"))
+
+lengths(cell_markers)
+```
+
+Here are custom colors for each cell type :
+
+```{r color_markers, fig.width = 8, fig.height = 0.8, class.source = "fold-hide"}
+color_markers = aquarius::color_markers
+color_markers = color_markers[names(color_markers) %in% names(cell_markers)]
+cell_markers = cell_markers[names(color_markers)] # re-order
+
+data.frame(cell_type = names(color_markers),
+           color = unlist(color_markers)) %>%
+  ggplot2::ggplot(., aes(x = cell_type, y = 0, fill = cell_type)) +
+  ggplot2::geom_point(pch = 21, size = 5) +
+  ggplot2::scale_fill_manual(values = unlist(color_markers), breaks = names(color_markers)) +
+  ggplot2::theme_classic() +
+  ggplot2::theme(legend.position = "none",
+                 axis.line = element_blank(),
+                 axis.title = element_blank(),
+                 axis.ticks = element_blank(),
+                 axis.text.y = element_blank(),
+                 axis.text.x = element_text(angle = 10))
+```
+
+These are some markers to assess cell type annotation :
+
+```{r dotplot_markers}
+dotplot_markers = list(
+  "tumor cells" = c("PLP1", "SOX10", "SOX9", "DLK1"),
+  "macrophages" = c("LYZ", "ADGRE1"),
+  "cDC" = c("CD1C", "Itgae"),
+  "T cells" = c("CD3E", "CD8A", "CD4"),
+  "NK cells" = c("KLRB1C", "NCR1"),
+  "mast cells" = c("TPSB2", "KIT"),
+  "B cells" = c("CD79A", "CD19"),
+  "endothelial cells" = c("EGFL7", "PECAM1"),
+  "fibroblasts" = c("MFAP5", "LUM"),
+  "mural cells" = c("NOTCH3", "DES"))
+
+lengths(dotplot_markers)
+```
+
+We save them :
+
+```{r save_annotation}
+saveRDS(color_markers, file = paste0(out_dir, "/", save_name, "_color_markers.rds"))
+saveRDS(cell_markers, file = paste0(out_dir, "/", save_name, "_cell_markers.rds"))
+saveRDS(dotplot_markers, file = paste0(out_dir, "/", save_name, "_dotplot_markers.rds"))
+```
+
+
+# R Session
+
+```{r sessioninfo, echo = FALSE, fold_output = TRUE}
+sessionInfo()
+```
