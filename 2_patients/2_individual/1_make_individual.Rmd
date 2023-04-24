@@ -178,59 +178,48 @@ cut_percent.rb = 30
 
 # Load count matrix
 
-In this section, we load the count matrix.
+In this section, we load the raw count matrix. Then, we applied an empty droplets filtering.
 
-```{r combine_datasets, class.source = "fold-hide", time_it = TRUE}
-# gz or h5 ?
-extension = stringr::str_split(string = list.files(count_matrix_dir),
-                               pattern = "\\.") %>%
-  lapply(., FUN = rev) %>%
-  lapply(., `[[`, 1) %>%
-  unlist() %>%
-  unique()
-
-if (extension == "h5") {
-  # Load matrices
-  all_files = list.files(count_matrix_dir)
-  names(all_files) = stringr::str_split(all_files, pattern = "_") %>%
-    lapply(., `[[`, 1) %>% unlist() # GSM...
-  
-  mat_list = lapply(names(all_files), FUN = function(one_file_name) {
-    one_file = all_files[one_file_name]
-    mat = Seurat::Read10X_h5(paste0(count_matrix_dir, "/", one_file))
-    colnames(mat) = paste0(one_file_name, "_", colnames(mat))
-    return(mat)
-  })
-  names(mat_list) = names(all_files)
-  rm(all_files)
-  
-  # Common genes and common gene order
-  common_genes = lapply(mat_list, FUN = rownames) %>%
-    Reduce(x = ., f = intersect)
-  
-  mat_list = lapply(mat_list, FUN = function(one_mat) {
-    one_mat[common_genes, ]
-  })
-  rm(common_genes)
-  
-  # Common matrix
-  common_matrix = Reduce(x = mat_list, f = cbind)
-  rm(mat_list)
-  
-  # Seurat object
-  sobj = Seurat::CreateSeuratObject(counts = common_matrix,
-                                    project = sample_name)
-  sobj$log_nCount_RNA = log(sobj$nCount_RNA)
-  
-  rm(common_matrix)
-} else {
-  # gz : load count matrix and make Seurat object
-  sobj = aquarius::load_sc_data(count_matrix_dir,
-                                sample_name = sample_name,
-                                my_seed = 1337L)
-}
-
+```{r load_count_matrix, time_it = TRUE}
+sobj = aquarius::load_sc_data(data_path = count_matrix_dir,
+                              sample_name = sample_name,
+                              my_seed = 1337L)
 sobj
+```
+
+We set an upper bound to 20,000 cells. Remaining cells correspond to ambiant RNA.
+
+```{r subset_nb_UMI}
+if (ncol(sobj) > 20000) {
+  sobj$nb_UMI = Seurat::GetAssayData(sobj, assay = "RNA", slot = "counts") %>%
+    Matrix::colSums()
+  
+  thresh_20k = sort(sobj$nb_UMI, decreasing = TRUE)[20000]
+  
+  sobj = subset(sobj, nb_UMI >= thresh_20k)
+  sobj$nb_UMI = NULL
+  
+  sobj
+}
+```
+
+
+In genes metadata, we add the Ensembl ID. The `sobj@assays$RNA@meta.features` dataframe contains three information :
+
+* `rownames` : gene names stored as the dimnames of the count matrix. Duplicated gene names will have a `.1` at the end of their name
+* `Ensembl_ID` : EnsemblID, as stored in the `features.tsv.gz` file
+* `gene_name` : gene_name, as stored in the `features.tsv.gz` file. Duplicated gene names will have the same name.
+
+```{r features_df}
+features_df = read.csv(paste0(count_matrix_dir, "/features.tsv.gz"), sep = "\t", header = 0)
+features_df = features_df[, c(1:2)]
+colnames(features_df) = c("Ensembl_ID", "gene_name")
+rownames(features_df) = rownames(sobj) # mandatory for Seurat::FindVariableFeatures
+
+sobj@assays$RNA@meta.features = features_df
+rm(features_df)
+
+head(sobj@assays$RNA@meta.features)
 ```
 
 We add the same columns as in metadata :

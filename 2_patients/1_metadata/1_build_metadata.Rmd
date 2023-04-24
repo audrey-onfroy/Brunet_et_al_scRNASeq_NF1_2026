@@ -114,28 +114,26 @@ sample_info = data.frame(
                    "GSM5404035", "GSM5404036", "GSM5404037", "GSM5404038",      # Wu
                    "GSM5404039", "GSM5404040", "GSM5404041", "GSM5404042",      # Wu
                    "GSM5404043", "GSM5404044",                                  # Wu
-                   "GSM5050721",                                                # Sun
-                   "GSE183308_1", "GSE183308_2"), # Zhang
+                   "GSM5050721"),                                              # Sun
   genotype = "patient",
   tumor_type = c(rep("dyNF", 3), "MPNST",
                  rep("pNF", 9), rep("MPNST", 4),
-                 "dyNF", rep("MPNST", 2)),
+                 "dyNF"),
   gender = c("F", rep("M", 3),
              "F", "M", "F",
              "F", "M", "M", "F",
              "F", "M", "M", "M",
              "F", "M",
-             "M", "F", "F"),
+             "M"),
   color = NA,
   origin = c(rep("here", 4),
              rep("Wu", 13),
-             rep("Sun", 1),
-             rep("Zhang", 2)),
+             rep("Sun", 1)),
   stringsAsFactors = FALSE) %>%
   dplyr::mutate(sample_type = paste0(genotype, "_", tumor_type)) %>%
-  dplyr::mutate(project_name = factor(project_name, levels = project_name)) %>%
   dplyr::mutate(tumor_type = factor(tumor_type, levels = c("pNF", "dyNF", "MPNST"))) %>%
   dplyr::arrange(genotype, tumor_type, gender) %>%
+  dplyr::mutate(project_name = factor(project_name, levels = project_name)) %>%
   dplyr::mutate(unique_id = data.table::rowid(sample_type)) %>%
   dplyr::mutate(sample_identifier = paste0(sample_type, "_", unique_id)) %>%
   dplyr::mutate(sample_identifier = factor(sample_identifier, levels = sample_identifier)) %>%
