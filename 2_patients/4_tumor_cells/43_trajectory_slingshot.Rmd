@@ -143,10 +143,7 @@ my_traj
 sobj$pseudotime = slingshot::slingPseudotime(my_traj)[, 1][colnames(sobj)]
 ```
 
-There are two trajectories :
-
-* going from the root to the grafted tumor
-* going from the root to the cells expressing a high level of mitochondrial genes, from the donor (dead end)
+There are eight trajectories :
 
 ```{r head_traj}
 head(slingshot::slingPseudotime(my_traj))
@@ -154,12 +151,50 @@ head(slingshot::slingPseudotime(my_traj))
 
 # Visualization
 
-We visualize pseudotime :
+We visualize all trajectories :
+
+```{r see_trajectories, fig.width = 12, fig.height = 30}
+pdt_df = slingshot::slingPseudotime(my_traj) %>%
+  as.data.frame()
+
+plot_list = lapply(colnames(pdt_df), FUN = function(one_pdt) {
+  sobj$pseudotime = pdt_df[, one_pdt]
+  
+  p = Seurat::FeaturePlot(sobj, features = "pseudotime",
+                          reduction = traj_umap) +
+    ggplot2::scale_color_gradientn(colors = viridis::viridis(n = 100)) +
+    ggplot2::labs(title = one_pdt) +
+    ggplot2::theme(aspect.ratio = 1,
+                   plot.title = element_text(hjust = 0.5)) +
+    Seurat::NoAxes()
+  
+  p2 = ggplot2::ggplot(sobj@meta.data[, c("sample_identifier", "pseudotime")],
+                       aes(x = pseudotime,
+                           col = sample_identifier,
+                           fill = sample_identifier)) +
+    ggplot2::geom_density(alpha = 0.1) +
+    ggplot2::scale_color_manual(values = sample_info$color,
+                                breaks = sample_info$sample_identifier) +
+    ggplot2::scale_fill_manual(values = sample_info$color,
+                               breaks = sample_info$sample_identifier) +
+    ggplot2::labs(x = one_pdt) +
+    ggplot2::theme_classic() +
+    ggplot2::theme(legend.position = "none")
+  
+  return(list(p, p2))
+}) %>% unlist(., recursive = FALSE)
+
+patchwork::wrap_plots(plot_list, ncol = 2,
+                      widths = c(1, 3))
+```
+
+
+We keep the first trajectory :
 
 ```{r pseudotime1, fig.width = 8, fig.height = 8}
 Seurat::FeaturePlot(sobj, features = "pseudotime",
-                    reduction = traj_umap,
-                    cols = viridis::viridis(n = 100)) +
+                    reduction = traj_umap) +
+  ggplot2::scale_color_gradientn(colors = viridis::viridis(n = 100)) +
   ggplot2::ggtitle("Pseudotime") +
   ggplot2::theme(aspect.ratio = 1,
                  plot.title = element_text(hjust = 0.5)) +
