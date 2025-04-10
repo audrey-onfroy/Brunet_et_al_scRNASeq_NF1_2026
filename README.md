@@ -8,7 +8,7 @@ The analysis described here is presented in the following publications:
 
 To read the analysis, please open `index.html` (local machine) or open it using the following link:
 
-https://audrey-onfroy.github.io/brunet_et_al/
+[https://audrey-onfroy.github.io/brunet_et_al/](https://audrey-onfroy.github.io/brunet_et_al/)
 
 ## Detailed methods
 
@@ -57,14 +57,14 @@ All figures are made using Seurat, ggplot2 and patchwork packages.
 
 Below are the references to the various tools we used :
 
-- rmarkdown : Yihui Xie, J.J. Allaire and Garrett Grolemund (2018). R Markdown: The Definitive Guide. Chapman and Hall/CRC. ISBN 9781138359338. URL: https://bookdown.org/yihui/rmarkdown.=
-- Singularity : https://doi.org/10.1371/journal.pone.0177459
-- Seurat V3 : https://doi.org/10.1016/j.cell.2019.05.031
-- scDblFinder : https://doi.org/10.12688/f1000research.73600.2
-- scds : https://doi.org/10.1093/bioinformatics/btz698
-- harmony : https://doi.org/10.1038/s41592-019-0619-0
-- ggplot2 : Wickham H. (2016). ggplot2: Elegant Graphics for Data Analysis. Springer-Verlag New York. ISBN 978-3-319-24277-4, https://ggplot2.tidyverse.org
-- patchwork : Pedersen T. (2022). patchwork: The Composer of Plots. https://patchwork.data-imaginist.com, https://github.com/thomasp85/patchwork
+- rmarkdown : Yihui Xie, J.J. Allaire and Garrett Grolemund (2018). R Markdown: The Definitive Guide. Chapman and Hall/CRC. ISBN 9781138359338. URL: [https://bookdown.org/yihui/rmarkdown](https://bookdown.org/yihui/rmarkdown)
+- Singularity : [https://doi.org/10.1371/journal.pone.0177459](https://doi.org/10.1371/journal.pone.0177459)
+- Seurat V3 : [https://doi.org/10.1016/j.cell.2019.05.031](https://doi.org/10.1016/j.cell.2019.05.031)
+- scDblFinder : [https://doi.org/10.12688/f1000research.73600.2](https://doi.org/10.12688/f1000research.73600.2)
+- scds : [https://doi.org/10.1093/bioinformatics/btz698](https://doi.org/10.1093/bioinformatics/btz698)
+- harmony : [https://doi.org/10.1038/s41592-019-0619-0](https://doi.org/10.1038/s41592-019-0619-0)
+- ggplot2 : Wickham H. (2016). ggplot2: Elegant Graphics for Data Analysis. Springer-Verlag New York. ISBN 978-3-319-24277-4, [https://ggplot2.tidyverse.org](https://ggplot2.tidyverse.org)
+- patchwork : Pedersen T. (2022). patchwork: The Composer of Plots. [https://patchwork.data-imaginist.com](https://patchwork.data-imaginist.com), [https://github.com/thomasp85/patchwork](https://github.com/thomasp85/patchwork)
 
 ## Citation
 
@@ -78,5 +78,5 @@ To cite this work (directory tree, modular files organisation, methological appr
 
 <br><br>
 
-| ![CC](https://upload.wikimedia.org/wikipedia/commons/d/d3/Cc_by-nc_icon.svg) | Except where otherwise noted, this work is licensed under <br> [https://creativecommons.org/licenses/by-nc/4.0/](https://creativecommons.org/licenses/by-nc/4.0/) |
+| ![CC](https://upload.wikimedia.org/wikipedia/commons/d/d3/Cc_by-nc_icon.svg) | Except where otherwise noted, this work is licensed under <br>[https://creativecommons.org/licenses/by-nc/4.0/](https://creativecommons.org/licenses/by-nc/4.0/) |
 |:----:|:---:|

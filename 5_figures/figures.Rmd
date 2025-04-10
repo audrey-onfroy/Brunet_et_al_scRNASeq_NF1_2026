@@ -428,6 +428,19 @@ patchwork::wrap_plots(plot_list, nrow = 3) &
   Seurat::NoLegend()
 ```
 
+We make a small figure for the favicon:
+
+```{r favicon, fig.width = 3, fig.height = 3}
+fig_cell_type +
+  Seurat::NoLegend() +
+  ggplot2::scale_x_continuous(expand = c(0,0)) +
+  ggplot2::scale_y_continuous(expand = c(0,0)) +
+  ggplot2::theme(plot.title = element_blank(),
+                 plot.subtitle = element_blank(),
+                 plot.margin = unit(c(0, 0, 0, 0), "null"))
+```
+
+
 ## By project name
 
 We look at `project_name` annotation :

@@ -1,0 +1,153 @@
+<h1 id="analysis-of-scrna-seq-data-from-nf1-patients">Analysis of
+scRNA-Seq data from NF1 patients</h1>
+<p>The analysis described here is presented in the following
+publications:</p>
+<blockquote>
+<p><a href="">Brunet <em>et al</em></a> (not yet accepted)</p>
+</blockquote>
+<blockquote>
+<p><a href="">Radomska <em>et al</em></a> (not yet accepted)</p>
+</blockquote>
+<p>To read the analysis, please open <code>index.html</code> (local
+machine) or open it using the following link:</p>
+<p><a
+href="https://audrey-onfroy.github.io/brunet_et_al/">https://audrey-onfroy.github.io/brunet_et_al/</a></p>
+<h2 id="detailed-methods">Detailed methods</h2>
+<h3 id="data">Data</h3>
+<p>The data investigated here are issued from 3 locations:</p>
+<ul>
+<li>our laboratory: check for the last authors in the publications (3
+dyNF and 1 MPNST samples)</li>
+<li><a href="https://doi.org/10.1126/sciadv.abo5442">Wu <em>et al</em>,
+2022, Science Advances</a> for the GSE179033 dataset (9 pNF and 4 MPNST
+samples)</li>
+<li><a href="https://doi.org/10.1016/j.stem.2021.04.029">Sun <em>et
+al</em>, 2019, Science Advances</a> for the GSE165826 dataset (1 dyNF
+sample)</li>
+</ul>
+<h3 id="from-fastq-files-from-count-matrices">From FASTQ files from
+count matrices</h3>
+<p>The public datasets were retrieved at the stage of count matrices.
+Refer to the original publications for the processing of FASTQ files.
+Regarding our data, the FASTQ files were processed using Cell Ranger
+software from 10X Genomics. Briefly, BCL files were converted to fastq
+files, then reads were extracted based on sample index, and mapped onto
+a Homo sapiens transcriptome version hg19, using 10x Genomics Cell
+Ranger 3.1.0 mkfastq and count functions, with default settings.</p>
+<h3 id="processing-of-the-count-matrices">Processing of the count
+matrices</h3>
+<h4 id="general-tools">General tools</h4>
+<p>We used R Markdown to generate fully traceable files for each
+analysis. Compiled HTML files are accessible through the Github
+repository. A Singularity container containing R version 3.6.3 and all
+specific versions for all the packages used for the analyses was
+developed to ensure version stability. It is accessible on Zenodo with
+<a href="https://zenodo.org/records/13145084">record ID 13145084</a>. R
+Markdown files were developed within R Studio but compiled in the
+terminal using the Singularity container.</p>
+<h4 id="count-matrices-to-indiviual-annotated-objects">Count matrices to
+indiviual annotated objects</h4>
+<p>Each dataset was analyzed individually. Count matrices were loaded
+using Seurat V3 package. Following filtering steps were applied. Cells
+with a log number of UMI lower than 6 or expressing a number of genes
+lower than 600 were removed. Then, doublet cells were removed using
+scDblFinder tool and scds in hybrid mode. Finally, cells having more
+than 20 % of UMI related to mitochondrial genes or more than 30 % of UMI
+related to ribosomal genes were filtered out. UMI count matrix for
+remaining cells was normalized using LogNormalize method implemented in
+Seurat V3 package. From the normalized count matrix, AddModuleScore was
+used to annotated cells for cell type using the marker sets provided as
+supplementary table. Individual datasets were then saved for further
+analyses.</p>
+<h4 id="combined-dataset">Combined dataset</h4>
+<h5 id="gene-annotation-homogenization">Gene annotation
+homogenization</h5>
+<p>Each dataset was not mapped using the same reference. To homogenize
+the annotation, correspondences between gene name and gene Ensembl ID,
+for each dataset, was extracted from their respective count matrix file.
+From 27,955 to 63,677 genes available in each dataset, 25,696 commonly
+available genes, based on Ensembl ID, were kept. Gene names were
+homogenized based on the transcriptome version we used for our datasets,
+hg19. Gene filtering and renaming was applied on non-normalized count
+matrix for each individual dataset. All 18 datasets were combined in one
+Seurat objected. Genes expressed in less than 5 cells were removed,
+leading to 22,624 genes remaining.</p>
+<h5 id="processing">Processing</h5>
+<p>Merged UMI count matrix was normalized using LogNormalize method
+implemented in Seurat V3 package. A PCA was generated using Seurat’s
+RunPCA function with 100 principal components (PC) from 2,000 highly
+variable features, identified using Seurat’s FindVariableFeatures
+function with default settings. Dataset-specific effect was removed on
+the PCA using RunHarmony function from harmony package with seed set and
+max.iter.harmony set to 50 (instead of 20) to ensure convergence. Some
+tumor cells were difficult to distinguish from fibroblasts. Thus, a
+large number of dimensions (n = 80) was used to generate a 2D
+projection. Both UMAP and tSNE were generated from 80 dimensions from
+harmony, using the implementation from Seurat package.</p>
+<h5 id="cell-type-annotation">Cell type annotation</h5>
+<p>Cell type annotation was kept from the individual analyses. This
+annotation is made at a single-cell level. To remove eventual
+mis-annotation, the annotation was smoothed at a cluster level. To
+obtain a clustering, a graph using Seurat’s FindNeighbors function on 80
+dimensions for the harmonized PCA, and then clustered cells from this
+graph using Seurat’s FindClusters function with a resolution of 1 was
+first generated. To smooth the annotation, we computed the proportion of
+cell type by clusters was computed and for each cluster the most
+abundant cell type was retained. For cell family annotation, cell family
+was associated to cell types and relabeled clusters.</p>
+<h3 id="figures">Figures</h3>
+<p>All figures are made using Seurat, ggplot2 and patchwork
+packages.</p>
+<h2 id="references">References</h2>
+<p>Below are the references to the various tools we used :</p>
+<ul>
+<li>rmarkdown : Yihui Xie, J.J. Allaire and Garrett Grolemund (2018). R
+Markdown: The Definitive Guide. Chapman and Hall/CRC. ISBN
+9781138359338. URL: <a
+href="https://bookdown.org/yihui/rmarkdown">https://bookdown.org/yihui/rmarkdown</a></li>
+<li>Singularity : <a
+href="https://doi.org/10.1371/journal.pone.0177459">https://doi.org/10.1371/journal.pone.0177459</a></li>
+<li>Seurat V3 : <a
+href="https://doi.org/10.1016/j.cell.2019.05.031">https://doi.org/10.1016/j.cell.2019.05.031</a></li>
+<li>scDblFinder : <a
+href="https://doi.org/10.12688/f1000research.73600.2">https://doi.org/10.12688/f1000research.73600.2</a></li>
+<li>scds : <a
+href="https://doi.org/10.1093/bioinformatics/btz698">https://doi.org/10.1093/bioinformatics/btz698</a></li>
+<li>harmony : <a
+href="https://doi.org/10.1038/s41592-019-0619-0">https://doi.org/10.1038/s41592-019-0619-0</a></li>
+<li>ggplot2 : Wickham H. (2016). ggplot2: Elegant Graphics for Data
+Analysis. Springer-Verlag New York. ISBN 978-3-319-24277-4, <a
+href="https://ggplot2.tidyverse.org">https://ggplot2.tidyverse.org</a></li>
+<li>patchwork : Pedersen T. (2022). patchwork: The Composer of Plots. <a
+href="https://patchwork.data-imaginist.com">https://patchwork.data-imaginist.com</a>,
+<a
+href="https://github.com/thomasp85/patchwork">https://github.com/thomasp85/patchwork</a></li>
+</ul>
+<h2 id="citation">Citation</h2>
+<p>To cite the data, please refer to their publication of origin.</p>
+<p>To cite the R packages and other tools, please refer to original
+publications.</p>
+<p>To cite this work (directory tree, modular files organisation,
+methological approach…), please use:</p>
+<blockquote>
+<p>12 tips paper (not yet published)</p>
+</blockquote>
+<p><br><br></p>
+<table>
+<colgroup>
+<col style="width: 54%" />
+<col style="width: 45%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: center;"><img
+src="https://upload.wikimedia.org/wikipedia/commons/d/d3/Cc_by-nc_icon.svg"
+alt="CC" /></th>
+<th style="text-align: center;">Except where otherwise noted, this work
+is licensed under <br><a
+href="https://creativecommons.org/licenses/by-nc/4.0/">https://creativecommons.org/licenses/by-nc/4.0/</a></th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table>
