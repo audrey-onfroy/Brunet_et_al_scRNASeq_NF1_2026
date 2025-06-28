@@ -2,9 +2,9 @@
 
 The analysis described here is presented in the following publications:
  
-> Radomska *et al* (not yet accepted)
+> Radomska *et al.*, Glial-to-mesenchymal transition of tumor Schwann cells drives the genetic burden in MPNSTs from Neurofibromatosis type 1 mouse model, Science Advances; doi: not yet available
 
-> Brunet *et al* (not yet accepted)
+> Brunet *et al* (in preparation)
 
 ## Detailed methods
 
@@ -68,9 +68,9 @@ To cite the data, please refer to their publication of origin.
 
 To cite the R packages and other tools, please refer to original publications.
 
-To cite this work (directory tree, modular files organisation, methological approach...), please use:
+To cite the analysis methodology (irectory tree, modular files organisation, methological approach...), please use:
 
-> 12 tips paper (not yet published)
+> Onfroy *et al.*, Twelve Tips for Reproducible Analysis of Single-Cell Transcriptomics Data, ACM REP '25: Proceedings of the 3rd ACM Conference on Reproducibility and Replicability; doi: 10.1145/3736731.3746138
 
 <br><br>
 
